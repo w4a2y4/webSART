@@ -11,13 +11,14 @@
   <body></body>
   <script>
 
-    const TRIAL_NUM = 10;
+    const BLOCK_NUM = 4;
+    const TRIAL_NUM = 20;
     const TARGET_PROPORTION = 0.1;
     const TARGET_NUM = TRIAL_NUM * TARGET_PROPORTION;
     const NONTARG_NUM = TRIAL_NUM - TARGET_NUM;
 
     /* setting */
-    var survey_trial = {
+    var subj_num = {
         type: 'survey-text',
         questions: [{prompt: "subj_num"}],
     }
@@ -60,12 +61,12 @@
             {
                 type: "image-keyboard-response",
                 stimulus: "img/probe/Probe1.jpg",
-                choices: ["1", "2", "3"]
+                choices: ["1", "2", "3"],
             },
             {
                 type: "image-keyboard-response",
                 stimulus: "img/probe/Probe2.jpg",
-                choices: ["1", "2", "3", "4", "5", "6", "7"]
+                choices: ["1", "2", "3", "4", "5", "6", "7"],
             }
         ],
         end: {
@@ -82,6 +83,26 @@
             type: "image-keyboard-response",
             stimulus: "img/postSleepiness.jpg",
             choices: ["1", "2", "3", "4"]
+        }
+    }
+
+    /* probe related */
+
+    var probe = {
+        type: jsPsych.timelineVariable('type'),
+        stimulus: jsPsych.timelineVariable('stimulus'),
+        choices: jsPsych.timelineVariable('choices'),
+        data: jsPsych.timelineVariable('data'),
+        on_finish: function(data){
+            data.test_part = 'prob';
+            data.ans = jsPsych.pluginAPI.convertKeyCodeToKeyCharacter(data.key_press);
+        }
+    }
+
+    function get_probe(x) {
+        return {
+            timeline: [probe],
+            timeline_variables: [x]
         }
     }
 
@@ -125,32 +146,36 @@
     }
 
     /* generate random content of test sequence */
-    var test_stimuli = [];
-    for (var i = 0; i < TARGET_NUM; i++)
-        test_stimuli.push(target_stumuli);
-    for (var i = 0; i < NONTARG_NUM; i++)
-        test_stimuli.push(non_target_stimuli[Math.floor(Math.random() * 9)]);
+    function generate_test_procedure() {
+        test_stimuli = [];
+        for (var i = 0; i < TARGET_NUM; i++)
+            test_stimuli.push(target_stumuli);
+        for (var i = 0; i < NONTARG_NUM; i++)
+            test_stimuli.push(non_target_stimuli[Math.floor(Math.random() * 9)]);
 
-    var test_procedure = {
-      timeline: [blank, test],
-      timeline_variables: test_stimuli,
-      randomize_order: true
+        return {
+            timeline: [blank, test],
+            timeline_variables: test_stimuli,
+            randomize_order: true
+        }
     }
-
 
     /* timeline */
     var timeline = [];
-
+    timeline.push(subj_num);
     timeline.push(instructions['intro'][0]);
     timeline.push(instructions['intro'][1]);
     timeline.push(instructions['intro'][2]);
     timeline.push(instructions['intro'][3]);
-    timeline.push(instructions['pre_sleep']);
+    timeline.push(get_probe(instructions['pre_sleep']));
     timeline.push(instructions['start']);
 
-    timeline.push(test_procedure);
+    for (var i = 0; i < BLOCK_NUM; i++) {
+        timeline.push(instructions['ready']);
+        timeline.push(generate_test_procedure());
+    }
 
-    timeline.push(instructions['post_sleep']);
+    timeline.push(get_probe(instructions['post_sleep']));
     timeline.push(instructions['end']);
 
     /* start the experiment */
@@ -160,12 +185,20 @@
         // TODO: start recording
       },
       on_finish: function() {
-        var mydata =
-            jsPsych.data.get()
+
+        jsPsych.data.displayData();
+        var res_data = jsPsych.data.get()
             .filter({test_part: 'test'})
             .ignore(['internal_node_id', 'key_press', 'trial_index', 'trial_type', 'stimulus', 'test_part', 'correct_response'])
             .csv();
-        console.log(mydata);
+
+        var prob_data = jsPsych.data.get()
+            .filter({test_part: 'prob'})
+            .ignore(['internal_node_id', 'key_press', 'trial_index', 'trial_type', 'test_part'])
+            .csv();
+
+        console.log(res_data);
+        console.log(prob_data);
         // TODO: stop recording
         // TODO: write out data
       }
