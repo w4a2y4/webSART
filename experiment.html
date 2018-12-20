@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>My experiment</title>
+    <script src="jspsych-6.0.5/jspsych.js"></script>
+    <script src="jspsych-6.0.5/plugins/jspsych-html-keyboard-response.js"></script>
+    <script src="jspsych-6.0.5/plugins/jspsych-image-keyboard-response.js"></script>
+    <link href="jspsych-6.0.5/css/jspsych.css" rel="stylesheet" type="text/css"></link>
+  </head>
+  <body></body>
+  <script>
+
+    /* define instructions trial */
+    var instructions = {
+        start: {
+            type: "image-keyboard-response",
+            stimulus: "img/Start.jpg",
+            choices: [" "]
+        },
+        ready: {
+            type: "image-keyboard-response",
+            stimulus: "img/Ready2Go.jpg",
+            choices: [" "]
+        },
+        intro: [
+            {
+                type: "image-keyboard-response",
+                stimulus: "img/Intro1.jpg",
+                choices: [" "]
+            },
+            {
+                type: "image-keyboard-response",
+                stimulus: "img/Intro2.jpg",
+                choices: [" "]
+            },
+            {
+                type: "image-keyboard-response",
+                stimulus: "img/Intro3.jpg",
+                choices: [" "]
+            },
+            {
+                type: "image-keyboard-response",
+                stimulus: "img/Intro4.jpg",
+                choices: [" "]
+            }
+        ],
+        probe: [
+            {
+                type: "image-keyboard-response",
+                stimulus: "img/probe/Probe1.jpg",
+                choices: ["1", "2", "3"]
+            },
+            {
+                type: "image-keyboard-response",
+                stimulus: "img/probe/Probe2.jpg",
+                choices: ["1", "2", "3", "4", "5", "6", "7"]
+            }
+        ],
+        end: {
+            type: "image-keyboard-response",
+            stimulus: "img/End.jpg",
+            choices: [" "]
+        },
+        pre_sleep: {
+            type: "image-keyboard-response",
+            stimulus: "img/preSleepiness.jpg",
+            choices: ["1", "2", "3", "4"]
+        },
+        post_sleep: {
+            type: "image-keyboard-response",
+            stimulus: "img/postSleepiness.jpg",
+            choices: ["1", "2", "3", "4"]
+        }
+    }
+
+    /* test trials */
+
+    var non_target_stimuli = [
+        { stimulus: "0", data: { test_part: 'test', correct_response: ' ' } },
+        { stimulus: "1", data: { test_part: 'test', correct_response: ' ' } },
+        { stimulus: "2", data: { test_part: 'test', correct_response: ' ' } },
+        { stimulus: "4", data: { test_part: 'test', correct_response: ' ' } },
+        { stimulus: "5", data: { test_part: 'test', correct_response: ' ' } },
+        { stimulus: "6", data: { test_part: 'test', correct_response: ' ' } },
+        { stimulus: "7", data: { test_part: 'test', correct_response: ' ' } },
+        { stimulus: "8", data: { test_part: 'test', correct_response: ' ' } },
+        { stimulus: "9", data: { test_part: 'test', correct_response: ' ' } },
+    ]
+
+    var target_stumuli = {
+        stimulus: "3",
+        data: { test_part: 'test', correct_response: jsPsych.NO_KEYS }
+    }
+
+    /* test trials */
+
+    // var test_stimuli = [
+    //   { stimulus: "img/blue.png", data: { test_part: 'test', correct_response: 'f' } },
+    //   { stimulus: "img/orange.png", data: { test_part: 'test', correct_response: 'j' } }
+    // ];
+
+    // var fixation = {
+    //   type: 'html-keyboard-response',
+    //   stimulus: '<div style="font-size:60px;">+</div>',
+    //   choices: jsPsych.NO_KEYS,
+    //   trial_duration: function(){
+    //     return jsPsych.randomization.sampleWithoutReplacement([250, 500, 750, 1000, 1250, 1500, 1750, 2000], 1)[0];
+    //   },
+    //   data: {test_part: 'fixation'}
+    // }
+
+    // var test = {
+    //   type: "image-keyboard-response",
+    //   stimulus: jsPsych.timelineVariable('stimulus'),
+    //   choices: ['f', 'j'],
+    //   data: jsPsych.timelineVariable('data'),
+    //   on_finish: function(data){
+    //     data.correct = data.key_press == jsPsych.pluginAPI.convertKeyCharacterToKeyCode(data.correct_response);
+    //   },
+    // }
+
+    // var test_procedure = {
+    //   timeline: [fixation, test],
+    //   timeline_variables: test_stimuli,
+    //   repetitions: 5,
+    //   randomize_order: true
+    // }
+    // timeline.push(test_procedure);
+
+    /* define debrief */
+
+    // var debrief_block = {
+    //   type: "html-keyboard-response",
+    //   stimulus: function() {
+
+    //     var trials = jsPsych.data.get().filter({test_part: 'test'});
+    //     var correct_trials = trials.filter({correct: true});
+    //     var accuracy = Math.round(correct_trials.count() / trials.count() * 100);
+    //     var rt = Math.round(correct_trials.select('rt').mean());
+
+    //     return "<p>You responded correctly on "+accuracy+"% of the trials.</p>"+
+    //     "<p>Your average response time was "+rt+"ms.</p>"+
+    //     "<p>Press any key to complete the experiment. Thank you!</p>";
+
+    //   }
+    // };
+    // timeline.push(debrief_block);
+
+    var timeline = [];
+    timeline.push(instructions['intro'][0]);
+    timeline.push(instructions['intro'][1]);
+    timeline.push(instructions['intro'][2]);
+    timeline.push(instructions['intro'][3]);
+    timeline.push(instructions['pre_sleep']);
+    timeline.push(instructions['start']);
+    timeline.push(instructions['post_sleep']);
+    timeline.push(instructions['end']);
+
+    /* start the experiment */
+    jsPsych.init({
+      timeline: timeline,
+      on_finish: function() {
+        jsPsych.data.displayData();
+      }
+    });
+
+  </script>
+</html>
