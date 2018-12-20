@@ -19,7 +19,7 @@
     /* setting */
     var survey_trial = {
         type: 'survey-text',
-        questions: [{prompt: "How old are you?"}, {prompt: "Where were you born?"}],
+        questions: [{prompt: "subj_num"}],
     }
 
     /* define instructions trial */
@@ -85,18 +85,15 @@
         }
     }
 
-    /* test trials */
-    var non_target_stimuli = [
-        { stimulus: "<h1>0</h1>", data: { test_part: 'test', correct_response: ' ', isTarget: false } },
-        { stimulus: "<h1>1</h1>", data: { test_part: 'test', correct_response: ' ', isTarget: false } },
-        { stimulus: "<h1>2</h1>", data: { test_part: 'test', correct_response: ' ', isTarget: false } },
-        { stimulus: "<h1>4</h1>", data: { test_part: 'test', correct_response: ' ', isTarget: false } },
-        { stimulus: "<h1>5</h1>", data: { test_part: 'test', correct_response: ' ', isTarget: false } },
-        { stimulus: "<h1>6</h1>", data: { test_part: 'test', correct_response: ' ', isTarget: false } },
-        { stimulus: "<h1>7</h1>", data: { test_part: 'test', correct_response: ' ', isTarget: false } },
-        { stimulus: "<h1>8</h1>", data: { test_part: 'test', correct_response: ' ', isTarget: false } },
-        { stimulus: "<h1>9</h1>", data: { test_part: 'test', correct_response: ' ', isTarget: false } },
-    ]
+    /* define stimulus */
+    var non_target_stimuli = [];
+    for (var i = 0; i < 10; i++) {
+        if (i == 3) continue;
+        non_target_stimuli.push({
+            stimulus: "<h1>" + i + "</h1>",
+            data: { test_part: 'test', correct_response: ' ', isTarget: false }
+        });
+    }
 
     var target_stumuli = {
         stimulus: "<h1>3</h1>",
@@ -116,6 +113,7 @@
       stimulus: jsPsych.timelineVariable('stimulus'),
       choices: [" "],
       data: jsPsych.timelineVariable('data'),
+      trial_duration: 2000,
       on_finish: function(data){
         data.correct = ( 
             data.key_press == jsPsych.pluginAPI.convertKeyCharacterToKeyCode(
@@ -123,8 +121,7 @@
             ));
         if (data.rt == null) data.time_onset = data.time_elapsed - 2000;
         else data.time_onset = data.time_elapsed - data.rt;
-      },
-      trial_duration: 2000
+      }
     }
 
     /* generate random content of test sequence */
@@ -140,44 +137,10 @@
       randomize_order: true
     }
 
-    /* test trials */
 
-    // var test_stimuli = [
-    //   { stimulus: "img/blue.png", data: { test_part: 'test', correct_response: 'f' } },
-    //   { stimulus: "img/orange.png", data: { test_part: 'test', correct_response: 'j' } }
-    // ];
-
-    // var fixation = {
-    //   type: 'html-keyboard-response',
-    //   stimulus: '<div style="font-size:60px;">+</div>',
-    //   choices: jsPsych.NO_KEYS,
-    //   trial_duration: function(){
-    //     return jsPsych.randomization.sampleWithoutReplacement([250, 500, 750, 1000, 1250, 1500, 1750, 2000], 1)[0];
-    //   },
-    //   data: {test_part: 'fixation'}
-    // }
-
-    /* define debrief */
-
-    // var debrief_block = {
-    //   type: "html-keyboard-response",
-    //   stimulus: function() {
-
-    //     var trials = jsPsych.data.get().filter({test_part: 'test'});
-    //     var correct_trials = trials.filter({correct: true});
-    //     var accuracy = Math.round(correct_trials.count() / trials.count() * 100);
-    //     var rt = Math.round(correct_trials.select('rt').mean());
-
-    //     return "<p>You responded correctly on "+accuracy+"% of the trials.</p>"+
-    //     "<p>Your average response time was "+rt+"ms.</p>"+
-    //     "<p>Press any key to complete the experiment. Thank you!</p>";
-
-    //   }
-    // };
-    // timeline.push(debrief_block);
-
+    /* timeline */
     var timeline = [];
-    
+
     timeline.push(instructions['intro'][0]);
     timeline.push(instructions['intro'][1]);
     timeline.push(instructions['intro'][2]);
@@ -194,7 +157,7 @@
     jsPsych.init({
       timeline: timeline,
       on_start: function() {
-        // start recording
+        // TODO: start recording
       },
       on_finish: function() {
         var mydata =
@@ -203,7 +166,8 @@
             .ignore(['internal_node_id', 'key_press', 'trial_index', 'trial_type', 'stimulus', 'test_part', 'correct_response'])
             .csv();
         console.log(mydata);
-        // stop recording
+        // TODO: stop recording
+        // TODO: write out data
       }
     });
 
