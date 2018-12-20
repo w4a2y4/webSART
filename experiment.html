@@ -17,13 +17,9 @@
     const TARGET_NUM = TRIAL_NUM * TARGET_PROPORTION;
     const NONTARG_NUM = TRIAL_NUM - TARGET_NUM;
 
-    /* setting */
-    var subj_num = {
-        type: 'survey-text',
-        questions: [{prompt: "subj_num"}],
-    }
 
-    /* define instructions trial */
+    /****************************** define stimulus ******************************/
+
     var instructions = {
         start: {
             type: "image-keyboard-response",
@@ -86,27 +82,11 @@
         }
     }
 
-    /* probe related */
-
-    var probe = {
-        type: jsPsych.timelineVariable('type'),
-        stimulus: jsPsych.timelineVariable('stimulus'),
-        choices: jsPsych.timelineVariable('choices'),
-        data: jsPsych.timelineVariable('data'),
-        on_finish: function(data){
-            data.test_part = 'prob';
-            data.ans = jsPsych.pluginAPI.convertKeyCodeToKeyCharacter(data.key_press);
-        }
+    var target_stumuli = {
+        stimulus: "<h1>3</h1>",
+        data: { test_part: 'test', correct_response: jsPsych.NO_KEYS, isTarget: true }
     }
 
-    function get_probe(x) {
-        return {
-            timeline: [probe],
-            timeline_variables: [x]
-        }
-    }
-
-    /* define stimulus */
     var non_target_stimuli = [];
     for (var i = 0; i < 10; i++) {
         if (i == 3) continue;
@@ -116,10 +96,8 @@
         });
     }
 
-    var target_stumuli = {
-        stimulus: "<h1>3</h1>",
-        data: { test_part: 'test', correct_response: jsPsych.NO_KEYS, isTarget: true }
-    }
+
+    /****************************** define timelines ******************************/
 
     var blank = {
       type: 'html-keyboard-response',
@@ -145,12 +123,30 @@
       }
     }
 
-    /* generate random content of test sequence */
-    function generate_test_procedure() {
+    var probe = {
+        type: jsPsych.timelineVariable('type'),
+        stimulus: jsPsych.timelineVariable('stimulus'),
+        choices: jsPsych.timelineVariable('choices'),
+        data: jsPsych.timelineVariable('data'),
+        on_finish: function(data){
+            data.test_part = 'prob';
+            data.ans = jsPsych.pluginAPI.convertKeyCodeToKeyCharacter(data.key_press);
+        }
+    }
+
+    var subj_num = {
+        type: 'survey-text',
+        questions: [{prompt: "subj_num"}],
+    }
+
+
+    /****************************** define functions ******************************/
+
+    function generate_test_procedure(t, nt) {
         test_stimuli = [];
-        for (var i = 0; i < TARGET_NUM; i++)
+        for (var i = 0; i < t; i++)
             test_stimuli.push(target_stumuli);
-        for (var i = 0; i < NONTARG_NUM; i++)
+        for (var i = 0; i < nt; i++)
             test_stimuli.push(non_target_stimuli[Math.floor(Math.random() * 9)]);
 
         return {
@@ -160,7 +156,16 @@
         }
     }
 
-    /* timeline */
+    function get_probe(x) {
+        return {
+            timeline: [probe],
+            timeline_variables: [x]
+        }
+    }
+
+
+    /******************************* prepare timelime ******************************/
+
     var timeline = [];
     timeline.push(subj_num);
     timeline.push(instructions['intro'][0]);
@@ -172,36 +177,37 @@
 
     for (var i = 0; i < BLOCK_NUM; i++) {
         timeline.push(instructions['ready']);
-        timeline.push(generate_test_procedure());
+        timeline.push(generate_test_procedure(TARGET_NUM, NONTARG_NUM));
     }
 
     timeline.push(get_probe(instructions['post_sleep']));
     timeline.push(instructions['end']);
 
-    /* start the experiment */
+
+    /****************************** start the experiment ******************************/
+
     jsPsych.init({
-      timeline: timeline,
-      on_start: function() {
-        // TODO: start recording
-      },
-      on_finish: function() {
+        timeline: timeline,
+        on_start: function() {
+            // TODO: start recording
+        },
+        on_finish: function() {
+            jsPsych.data.displayData();
+            var res_data = jsPsych.data.get()
+                .filter({test_part: 'test'})
+                .ignore(['internal_node_id', 'key_press', 'trial_index', 'trial_type', 'stimulus', 'test_part', 'correct_response'])
+                .csv();
 
-        jsPsych.data.displayData();
-        var res_data = jsPsych.data.get()
-            .filter({test_part: 'test'})
-            .ignore(['internal_node_id', 'key_press', 'trial_index', 'trial_type', 'stimulus', 'test_part', 'correct_response'])
-            .csv();
+            var prob_data = jsPsych.data.get()
+                .filter({test_part: 'prob'})
+                .ignore(['internal_node_id', 'key_press', 'trial_index', 'trial_type', 'test_part'])
+                .csv();
 
-        var prob_data = jsPsych.data.get()
-            .filter({test_part: 'prob'})
-            .ignore(['internal_node_id', 'key_press', 'trial_index', 'trial_type', 'test_part'])
-            .csv();
-
-        console.log(res_data);
-        console.log(prob_data);
-        // TODO: stop recording
-        // TODO: write out data
-      }
+            console.log(res_data);
+            console.log(prob_data);
+            // TODO: stop recording
+            // TODO: write out data
+        }
     });
 
   </script>
