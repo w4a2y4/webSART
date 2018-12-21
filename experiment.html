@@ -4,16 +4,18 @@
     <title>My experiment</title>
     <script src="jspsych-6.0.5/jspsych.js"></script>
     <script src="jspsych-6.0.5/plugins/jspsych-html-keyboard-response.js"></script>
+    <script src="jspsych-6.0.5/plugins/jspsych-html-button-response.js"></script>
     <script src="jspsych-6.0.5/plugins/jspsych-image-keyboard-response.js"></script>
+    <script src="jspsych-6.0.5/plugins/jspsych-image-button-response.js"></script>
     <script src="jspsych-6.0.5/plugins/jspsych-survey-text.js"></script>
     <link href="jspsych-6.0.5/css/jspsych.css" rel="stylesheet" type="text/css"></link>
   </head>
   <body></body>
   <script>
 
-    const BLOCK_NUM = 4;
-    const TRIAL_NUM = 20;
-    const TARGET_PROPORTION = 0.1;
+    const BLOCK_NUM = 1;
+    const TRIAL_NUM = 10;
+    const TARGET_PROPORTION = 0.5;
     const TARGET_NUM = TRIAL_NUM * TARGET_PROPORTION;
     const NONTARG_NUM = TRIAL_NUM - TARGET_NUM;
 
@@ -22,9 +24,9 @@
 
     var instructions = {
         start: {
-            type: "image-keyboard-response",
+            type: "image-button-response",
             stimulus: "img/Start.jpg",
-            choices: [" "]
+            choices: ["continue"]
         },
         ready: {
             type: "image-keyboard-response",
@@ -84,7 +86,7 @@
 
     var target_stumuli = {
         stimulus: "<h1>3</h1>",
-        data: { test_part: 'test', correct_response: jsPsych.NO_KEYS, isTarget: true }
+        data: { correct_response: null, isTarget: true }
     }
 
     var non_target_stimuli = [];
@@ -92,7 +94,7 @@
         if (i == 3) continue;
         non_target_stimuli.push({
             stimulus: "<h1>" + i + "</h1>",
-            data: { test_part: 'test', correct_response: ' ', isTarget: false }
+            data: { correct_response: '0', isTarget: false }
         });
     }
 
@@ -108,16 +110,15 @@
     }
 
     var test = {
-      type: "html-keyboard-response",
+      type: "html-button-response",
+      test_part: 'test',
       stimulus: jsPsych.timelineVariable('stimulus'),
       choices: [" "],
+      button_html: '<button class="jspsych-btn" style="width: 80vw; height: 20vh; margin-top: 20vh;">%choice%</button>',
       data: jsPsych.timelineVariable('data'),
       trial_duration: 2000,
       on_finish: function(data){
-        data.correct = ( 
-            data.key_press == jsPsych.pluginAPI.convertKeyCharacterToKeyCode(
-                data.correct_response
-            ));
+        data.correct = ( data.button_pressed == data.correct_response );
         if (data.rt == null) data.time_onset = data.time_elapsed - 2000;
         else data.time_onset = data.time_elapsed - data.rt;
       }
@@ -195,7 +196,7 @@
             jsPsych.data.displayData();
             var res_data = jsPsych.data.get()
                 .filter({test_part: 'test'})
-                .ignore(['internal_node_id', 'key_press', 'trial_index', 'trial_type', 'stimulus', 'test_part', 'correct_response'])
+                .ignore(['internal_node_id', 'button_press', 'trial_index', 'trial_type', 'stimulus', 'test_part', 'correct_response'])
                 .csv();
 
             var prob_data = jsPsych.data.get()
