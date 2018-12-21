@@ -8,6 +8,8 @@
     <script src="jspsych-6.0.5/plugins/jspsych-image-keyboard-response.js"></script>
     <script src="jspsych-6.0.5/plugins/jspsych-image-button-response.js"></script>
     <script src="jspsych-6.0.5/plugins/jspsych-survey-text.js"></script>
+    <script src="jspsych-6.0.5/plugins/jspsych-survey-likert.js"></script>
+    <script src="jspsych-6.0.5/plugins/jspsych-survey-multi-choice.js"></script>
     <link href="jspsych-6.0.5/css/jspsych.css" rel="stylesheet" type="text/css"></link>
   </head>
   <body></body>
@@ -15,7 +17,7 @@
 
     const BLOCK_NUM = 1;
     const TRIAL_NUM = 10;
-    const TARGET_PROPORTION = 0.5;
+    const TARGET_PROPORTION = 0.1;
     const TARGET_NUM = TRIAL_NUM * TARGET_PROPORTION;
     const NONTARG_NUM = TRIAL_NUM - TARGET_NUM;
 
@@ -94,6 +96,42 @@
             stimulus: "<h1>" + i + "</h1>",
             data: { correct_response: '0', isTarget: false }
         });
+    }
+
+    var probe_attention = {
+        type: 'survey-multi-choice',
+        questions: [{
+            prompt: '<h2>請問你前15秒鐘的時間內，腦海正在想些什麼?</h2>',
+            options: [
+                '1 專注在這個作業上',
+                '2 被別的刺激分心',
+                '3 在思考與作業無關的事情'
+            ]
+        }],
+    }
+
+    var probe_performance = {
+        type: 'survey-likert',
+        questions: [{
+            prompt: '<h2>呈上題，你覺得自己在那前15秒鐘的作業表現如何?</h2>1 相當不好 <-> 7 相當好',
+            labels: ['1', '2', '3', '4', '5', '6', '7']
+        }],
+    }
+
+    var pre_sleep = {
+        type: 'survey-likert',
+        questions: [{
+            prompt: '<h2>實驗正式開始前，請問你現在的睏睡程度如何?</h2>1 完全不睏睡 <-> 4 相當睏睡',
+            labels: ['1', '2', '3', '4']
+        }],
+    }
+
+    var post_sleep = {
+        type: 'survey-likert',
+        questions: [{
+            prompt: '<h2>請問你現在的睏睡程度如何?</h2>1 完全不睏睡 <-> 4 相當睏睡',
+            labels: ['1', '2', '3', '4']
+        }],
     }
 
 
@@ -192,7 +230,7 @@
     timeline.push(get_intro_index(1));
     timeline.push(get_intro_index(2));
     timeline.push(get_intro_index(3));
-    timeline.push(get_probe(instructions['pre_sleep']));
+    timeline.push(pre_sleep);
     timeline.push(get_intro('start'));
 
     for (var i = 0; i < BLOCK_NUM; i++) {
@@ -200,7 +238,7 @@
         timeline.push(generate_test_procedure(TARGET_NUM, NONTARG_NUM));
     }
 
-    timeline.push(get_probe(instructions['post_sleep']));
+    timeline.push(post_sleep);
     timeline.push(get_intro('end'));
 
 
