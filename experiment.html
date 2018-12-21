@@ -19,40 +19,39 @@
     const TARGET_NUM = TRIAL_NUM * TARGET_PROPORTION;
     const NONTARG_NUM = TRIAL_NUM - TARGET_NUM;
 
-
     /****************************** define stimulus ******************************/
 
     var instructions = {
         start: {
-            type: "image-button-response",
-            stimulus: "img/Start.jpg",
-            choices: ["continue"]
+            stimulus: '<h2>實驗驗說明完畢。 </h2>'
+                + '<h2>準備好後請按下Continue以開始實驗。<br/><br/><br/></h2>'
         },
         ready: {
-            type: "image-keyboard-response",
-            stimulus: "img/Ready2Go.jpg",
-            choices: [" "]
+            stimulus: '<h1><i>請稍事休息或繼續實驗</i><br/><br/><br/></h1>'
         },
         intro: [
             {
-                type: "image-keyboard-response",
-                stimulus: "img/Intro1.jpg",
-                choices: [" "]
+                stimulus: '<h2>感謝您參加本實驗!</h2>'
+                    + '<h2>於以下實驗中，您將會看到不同的數字呈現在螢幕中央。</h2>'
+                    + '<h2>當數字出現時，請盡可能【迅速且正確】地按下螢幕下方的按鈕。</h2>'
+                    + '<h2 style="color: red">然而若是看到數字【3】請不要按下任何按鈕!<br/><br/><br/></h2>'
             },
             {
-                type: "image-keyboard-response",
-                stimulus: "img/Intro2.jpg",
-                choices: [" "]
+                stimulus: '<h2>過程中偶爾會出現以下問句:</h2>'
+                    + '<img src="img/probe/Probe1.jpg" style="height: 50vh"/>'
+                    + '<h2>請您依這段時間的實際狀態，進行選擇。<br/><br/><br/></h2>'
             },
             {
-                type: "image-keyboard-response",
-                stimulus: "img/Intro3.jpg",
-                choices: [" "]
+                stimulus: '<h2>也會出現以下問句:</h2>'
+                    + '<img src="img/probe/Probe1.jpg" style="height: 50vh"/>'
+                    + '<h2>請您依這段時間的實際感受，進行選擇。<br/><br/><br/></h2>'
             },
             {
-                type: "image-keyboard-response",
-                stimulus: "img/Intro4.jpg",
-                choices: [" "]
+                stimulus: '<h2>當您看到以下指示時:</h2>'
+                    + '<h1><br/><i>" 請稍事休息或繼續實驗 "</i><br/><br/></h1>'
+                    + '<h2>表示現在是可以休息的時間。</h2>'
+                    + '<h2>您可以選擇稍事<span style="color: red">休息1~2分鐘</span>， </h2>'
+                    + '<h2>或是直接繼續實驗。<br/><br/><br/></h2>'
             }
         ],
         probe: [
@@ -68,9 +67,8 @@
             }
         ],
         end: {
-            type: "image-keyboard-response",
-            stimulus: "img/End.jpg",
-            choices: [" "]
+            stimulus: '<h2>本階段實驗結束，謝謝您的參與。<h2/>'
+                + '<p>(請通知主試者)<br/><br/><br/></p>'
         },
         pre_sleep: {
             type: "image-keyboard-response",
@@ -114,7 +112,7 @@
       test_part: 'test',
       stimulus: jsPsych.timelineVariable('stimulus'),
       choices: [" "],
-      button_html: '<button class="jspsych-btn" style="width: 80vw; height: 20vh; margin-top: 20vh;">%choice%</button>',
+      button_html: '<button class="jspsych-btn" style="width: 80vw; height: 30vh; position: relative; top: 20vh;">%choice%</button>',
       data: jsPsych.timelineVariable('data'),
       trial_duration: 2000,
       on_finish: function(data){
@@ -133,6 +131,14 @@
             data.test_part = 'prob';
             data.ans = jsPsych.pluginAPI.convertKeyCodeToKeyCharacter(data.key_press);
         }
+    }
+
+    var intro = {
+        type: 'html-button-response',
+        stimulus: jsPsych.timelineVariable('stimulus'),
+        choices: ['continue'],
+        data: jsPsych.timelineVariable('data'),
+        test_part: 'intro'
     }
 
     var subj_num = {
@@ -164,25 +170,38 @@
         }
     }
 
+    function get_intro(x) {
+        return {
+            timeline: [intro],
+            timeline_variables: [instructions[x]]
+        }
+    }
+
+    function get_intro_index(i) {
+        return {
+            timeline: [intro],
+            timeline_variables: [instructions['intro'][i]]
+        }
+    }
 
     /******************************* prepare timelime ******************************/
 
     var timeline = [];
     timeline.push(subj_num);
-    timeline.push(instructions['intro'][0]);
-    timeline.push(instructions['intro'][1]);
-    timeline.push(instructions['intro'][2]);
-    timeline.push(instructions['intro'][3]);
+    timeline.push(get_intro_index(0));
+    timeline.push(get_intro_index(1));
+    timeline.push(get_intro_index(2));
+    timeline.push(get_intro_index(3));
     timeline.push(get_probe(instructions['pre_sleep']));
-    timeline.push(instructions['start']);
+    timeline.push(get_intro('start'));
 
     for (var i = 0; i < BLOCK_NUM; i++) {
-        timeline.push(instructions['ready']);
+        timeline.push(get_intro('ready'));
         timeline.push(generate_test_procedure(TARGET_NUM, NONTARG_NUM));
     }
 
     timeline.push(get_probe(instructions['post_sleep']));
-    timeline.push(instructions['end']);
+    timeline.push(get_intro('end'));
 
 
     /****************************** start the experiment ******************************/
