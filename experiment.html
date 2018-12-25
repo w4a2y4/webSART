@@ -11,8 +11,20 @@
     <script src="jspsych-6.0.5/plugins/jspsych-survey-likert.js"></script>
     <script src="jspsych-6.0.5/plugins/jspsych-survey-multi-choice.js"></script>
     <link href="jspsych-6.0.5/css/jspsych.css" rel="stylesheet" type="text/css"></link>
+
+    
   </head>
-  <body></body>
+  <body>
+    <div id="wrapper"></div>
+    <div class="aselect">
+        <label for="audioSource">Audio input source: </label><select id="audioSource"></select>
+    </div>
+
+    <div class="vselect">
+        <label for="videoSource">Video source: </label><select id="videoSource"></select>
+    </div>
+    <video class="videostream" autoplay></video>
+  </body>
   <script>
 
     const BLOCK_NUM = 1;
@@ -20,6 +32,83 @@
     const TARGET_PROPORTION = 0.1;
     const TARGET_NUM = TRIAL_NUM * TARGET_PROPORTION;
     const NONTARG_NUM = TRIAL_NUM - TARGET_NUM;
+
+    /* Video */
+
+    const videoElement = document.querySelector('video');
+    const audioSelect = document.querySelector('select#audioSource');
+    const videoSelect = document.querySelector('select#videoSource');
+    var recorder;
+    var allChunks = [];
+
+    audioSelect.onchange = getStream;
+    videoSelect.onchange = getStream;
+
+    function gotDevices(deviceInfos) {
+      for (let i = 0; i !== deviceInfos.length; ++i) {
+        const deviceInfo = deviceInfos[i];
+        const option = document.createElement('option');
+        option.value = deviceInfo.deviceId;
+        if (deviceInfo.kind === 'audioinput') {
+          option.text = deviceInfo.label ||
+            'microphone ' + (audioSelect.length + 1);
+          audioSelect.appendChild(option);
+        } else if (deviceInfo.kind === 'videoinput') {
+          option.text = deviceInfo.label || 'camera ' +
+            (videoSelect.length + 1);
+          videoSelect.appendChild(option);
+        } else {
+          console.log('Found another kind of device: ', deviceInfo);
+        }
+      }
+    }
+
+    function getStream() {
+      if (window.stream) {
+        window.stream.getTracks().forEach(function(track) {
+          track.stop();
+        });
+      }
+
+      const constraints = {
+        audio: {
+          deviceId: {exact: audioSelect.value}
+        },
+        video: {
+          deviceId: {exact: videoSelect.value}
+        }
+      };
+
+      navigator.mediaDevices.getUserMedia(constraints).
+        then(gotStream).catch(handleError);
+    }
+
+    function gotStream(stream) {
+      // window.stream = stream; // make stream available to console
+      // videoElement.srcObject = stream;
+      recorder = new MediaRecorder(stream);
+      recorder.ondataavailable = pushblob;
+      recorder.onstop = stoprecord;
+      recorder.start();
+    }
+
+    function handleError(error) {
+      console.error('Error: ', error);
+    }
+
+    function pushblob(e) {
+        allChunks.push(e.data);
+        console.log("!!!!");
+    }
+
+    function stoprecord() {
+        var fullBlob = new Blob(allChunks);
+        window.fb = fullBlob;
+        window.dl = download;
+        console.log(allChunks);
+        console.log(fullBlob);
+        download(fullBlob, 'media.webm');
+    }
 
     /****************************** define stimulus ******************************/
 
@@ -147,13 +236,13 @@
 
     var test = {
       type: "html-button-response",
-      test_part: 'test',
       stimulus: jsPsych.timelineVariable('stimulus'),
       choices: [" "],
       button_html: '<button class="jspsych-btn" style="width: 80vw; height: 30vh; position: relative; top: 20vh;">%choice%</button>',
       data: jsPsych.timelineVariable('data'),
       trial_duration: 2000,
       on_finish: function(data){
+        data.test_part = 'test';
         data.correct = ( data.button_pressed == data.correct_response );
         if (data.rt == null) data.time_onset = data.time_elapsed - 2000;
         else data.time_onset = data.time_elapsed - data.rt;
@@ -222,6 +311,18 @@
         }
     }
 
+    function download(content, fileName, contentType) {
+        var a = document.createElement("a");
+        var file = new Blob([content], {type: contentType});
+        a.href = URL.createObjectURL(file);
+        a.download = fileName;
+        a.click();
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
     /******************************* prepare timelime ******************************/
 
     var timeline = [];
@@ -241,30 +342,27 @@
     timeline.push(post_sleep);
     timeline.push(get_intro('end'));
 
+    navigator.mediaDevices.enumerateDevices().then(gotDevices).then(getStream).catch(handleError);
+    videoElement.style.display = 'none';
+    document.querySelector('.aselect').style.display = 'none';
+    document.querySelector('.vselect').style.display = 'none';
+
 
     /****************************** start the experiment ******************************/
 
     jsPsych.init({
         timeline: timeline,
-        on_start: function() {
-            // TODO: start recording
-        },
+        display_element: 'wrapper',
         on_finish: function() {
+            recorder.stop();
             jsPsych.data.displayData();
-            var res_data = jsPsych.data.get()
-                .filter({test_part: 'test'})
-                .ignore(['internal_node_id', 'button_press', 'trial_index', 'trial_type', 'stimulus', 'test_part', 'correct_response'])
+            var dt = jsPsych.data.get();
+            var res_data = dt.filter({test_part: 'test'})
+                .ignore(['internal_node_id', 'trial_index', 'trial_type', 'stimulus', 'test_part', 'correct_response'])
                 .csv();
-
-            var prob_data = jsPsych.data.get()
-                .filter({test_part: 'prob'})
-                .ignore(['internal_node_id', 'key_press', 'trial_index', 'trial_type', 'test_part'])
+            var prob_data = dt.filter({test_part: 'prob'}).ignore(['internal_node_id', 'key_press', 'trial_index', 'trial_type', 'test_part'])
                 .csv();
-
-            console.log(res_data);
-            console.log(prob_data);
-            // TODO: stop recording
-            // TODO: write out data
+            download(res_data + prob_data, "test.csv");
         }
     });
 
