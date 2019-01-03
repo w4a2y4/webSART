@@ -7,8 +7,6 @@ var io = require('socket.io')(http);
 
 var fs = require('fs');
 
-var filename;
-
 Date.prototype.Format = function (fmt) {  
     var o = {
         "M+": this.getMonth() + 1, //月份 
@@ -25,9 +23,8 @@ Date.prototype.Format = function (fmt) {
     return fmt;
 }
 
-function finit(subj_num) {
+function finit(filename) {
     var t = new Date().Format("yyyyMMdd-hhmm");
-    filename = 'log/Sub' + subj_num + '-' + t;
     fs.writeFile(filename, "created @ " + t + '\n', function(err){
         if (err) {
           console.error(err)
@@ -35,10 +32,14 @@ function finit(subj_num) {
     });
 }
 
-function fwrite(data) {
+function fwrite(filename, data) {
     fs.appendFile( filename , data + '\n', function(err){
         if (err) { console.error(err) }
     });
+}
+
+function savevid(filename, blob) {
+
 }
 
 var user_num=0;
@@ -50,44 +51,91 @@ io.on('connection', function(socket){
 
     console.log('user '+ user_num + ' connected');
     var user = user_num++;
+    var start_record_time = -1;
+    var fname = 'invalid';
 
-    socket.on('subj_num', function(n){
+    var initialized = false;
+    var allchunks = [];
+
+
+    socket.on('subj_num', function(expt, n){
+        var t = new Date().Format("hh:mm:ss.S");
         console.log('subj_num: ' + n);
-        finit(n);
+
+        var t = new Date().Format("yyyyMMdd-hhmm");
+        fname = 'log/Sub' + n + '-' + t;
+        finit(fname);
+        fwrite(fname, 'experiment offset: ' + expt + ', ' + t);
+        fwrite(fname, 'start recording: ' + start_record_time);
+        initialized = true;
     });
+
+    socket.on('start_recording', function(n){
+        start_record_time = new Date().Format("hh:mm:ss.S");
+        if (initialized)
+            fwrite(fname, 'start recording: ' + start_record_time);
+        console.log('start record');
+    });
+
+    socket.on('send_start', function(){
+        console.log('send start');
+    });
+
+    socket.on('chunk', function(i, chunk){
+        console.log('chunk #' + i);
+        allchunks.push(chunk);
+    });
+
+    socket.on('send_end', function(){
+        console.log('send end');
+        var fullBlob = new Blob(allchunks, {type: 'video/mp4'});
+        fs.writeFile(fname +'.mp4' , fullBlob, function(err){
+            if (err) {
+                console.error(err)
+            }
+        });
+    });
+
+    socket.on('vid', function(data){
+        fs.writeFile(fname +'.mp4' , data, function(err){
+            if (err) {
+                console.error(err)
+            }
+        });
+    })
+
+    // socket.on('start_s', function(dest, list){
+    //     console.log('user '+user+' press start !');
+    //     var t = new Date().Format("hh:mm:ss:S");
+    //     console.log( t+' list fade in @client' + dest);
+    //     fwrite( '\n' +t+' list fade in @client' + dest );
+    //     io.emit('start_c', dest, list);
+    // });
+
+    // socket.on('click_s', function(bool){
+    //     console.log('user '+user+' click '+bool+'!');
+    //     fwrite( bool );
+    //     io.emit('click_c');
+    // });
+
+    // socket.on('init', function(){
+    //     console.log('initialize cnt');
+    // });
+
+    // socket.on('fade_word', function(i) {
+    //     var t = new Date().Format("hh:mm:ss:S");
+    //     console.log( t+' word #'+i+' fade out.');
+    //     fwrite( t+' word #'+i+' fade out.' );
+    // });
+
+    // socket.on('distract', function(i) {
+    //     var t = new Date().Format("hh:mm:ss:S");
+    //     console.log( 'Distract QQ' );
+    //     fwrite( t+' Distract' );
+    // });
 
     socket.on('disconnect', function(){
-        console.log('user '+user+' disconnectedQQ');
-    });
-
-    socket.on('start_s', function(dest, list){
-        console.log('user '+user+' press start !');
-        var t = new Date().Format("hh:mm:ss:S");
-        console.log( t+' list fade in @client' + dest);
-        fwrite( '\n' +t+' list fade in @client' + dest );
-        io.emit('start_c', dest, list);
-    });
-
-    socket.on('click_s', function(bool){
-        console.log('user '+user+' click '+bool+'!');
-        fwrite( bool );
-        io.emit('click_c');
-    });
-
-    socket.on('init', function(){
-        console.log('initialize cnt');
-    });
-
-    socket.on('fade_word', function(i) {
-        var t = new Date().Format("hh:mm:ss:S");
-        console.log( t+' word #'+i+' fade out.');
-        fwrite( t+' word #'+i+' fade out.' );
-    });
-
-    socket.on('distract', function(i) {
-        var t = new Date().Format("hh:mm:ss:S");
-        console.log( 'Distract QQ' );
-        fwrite( t+' Distract' );
+        console.log('user '+user+' disconnected');
     });
 
 });

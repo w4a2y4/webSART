@@ -92,10 +92,11 @@
     function gotStream(stream) {
       // window.stream = stream; // make stream available to console
       // videoElement.srcObject = stream;
-      recorder = new MediaRecorder(stream);
+      recorder = new MediaRecorder(stream, {mimeType: 'video/webm;codecs=h264'});
       recorder.ondataavailable = pushblob;
       recorder.onstop = stoprecord;
       recorder.start();
+      socket.emit('start_recording');
     }
 
     function handleError(error) {
@@ -108,12 +109,22 @@
     }
 
     function stoprecord() {
-        var fullBlob = new Blob(allChunks);
+        var fullBlob = new Blob(allChunks, {type: 'video/mp4'});
         window.fb = fullBlob;
         window.dl = download;
         console.log(allChunks);
         console.log(fullBlob);
-        download(fullBlob, 'media.webm');
+        download(fullBlob, 'media.mp4');
+        socket.emit('vid', fullBlob);
+        // sendrecord();
+    }
+
+    function sendrecord() {
+        socket.emit('send_start');
+        for (i = 0; i < allChunks.length; i++) {
+            socket.emit('chunk', i, allChunks[i]);
+        }
+        socket.emit('send_end');
     }
 
 
@@ -165,8 +176,9 @@
         type: 'survey-text',
         questions: [{prompt: "subj_num"}],
         on_finish: function(data){
+            t = data.time_elapsed;
             SUBJECT = JSON.parse(data.responses)["Q0"];
-            socket.emit('subj_num', SUBJECT);
+            socket.emit('subj_num', t, SUBJECT);
         }
     }
 
@@ -239,14 +251,17 @@
     timeline.push(post_sleep);
     timeline.push(get_intro('end'));
 
-    navigator.mediaDevices.enumerateDevices().then(gotDevices).then(getStream).catch(handleError);
+    navigator.mediaDevices
+        .enumerateDevices()
+        .then(gotDevices)
+        .then(getStream)
+        .catch(handleError);
     videoElement.style.display = 'none';
     document.querySelector('.aselect').style.display = 'none';
     document.querySelector('.vselect').style.display = 'none';
 
 
     /****************************** start the experiment ******************************/
-
     jsPsych.init({
         timeline: timeline,
         display_element: 'wrapper',
