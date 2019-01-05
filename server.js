@@ -104,36 +104,6 @@ io.on('connection', function(socket){
         });
     })
 
-    // socket.on('start_s', function(dest, list){
-    //     console.log('user '+user+' press start !');
-    //     var t = new Date().Format("hh:mm:ss:S");
-    //     console.log( t+' list fade in @client' + dest);
-    //     fwrite( '\n' +t+' list fade in @client' + dest );
-    //     io.emit('start_c', dest, list);
-    // });
-
-    // socket.on('click_s', function(bool){
-    //     console.log('user '+user+' click '+bool+'!');
-    //     fwrite( bool );
-    //     io.emit('click_c');
-    // });
-
-    // socket.on('init', function(){
-    //     console.log('initialize cnt');
-    // });
-
-    // socket.on('fade_word', function(i) {
-    //     var t = new Date().Format("hh:mm:ss:S");
-    //     console.log( t+' word #'+i+' fade out.');
-    //     fwrite( t+' word #'+i+' fade out.' );
-    // });
-
-    // socket.on('distract', function(i) {
-    //     var t = new Date().Format("hh:mm:ss:S");
-    //     console.log( 'Distract QQ' );
-    //     fwrite( t+' Distract' );
-    // });
-
     socket.on('disconnect', function(){
         console.log('user '+user+' disconnected');
     });
