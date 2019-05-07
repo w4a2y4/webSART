@@ -1,5 +1,8 @@
 /****************************** define stimulus ******************************/
-var SHOW_PROB = false;
+// var SHOW_PROB = false;
+
+// always show probe 
+var SHOW_PROB = true;
 
 var instructions = {
     start: {
@@ -119,10 +122,12 @@ var probe_node = {
     timeline: [probe_attention, probe_performance],
     timeline_variables: "1",
     conditional_function: function(){
-        console.log(SHOW_PROB);
-        var tmp = SHOW_PROB;
-        SHOW_PROB = false;
-        return tmp;
+        // always show probe 
+        return true;
+        // console.log(SHOW_PROB);
+        // var tmp = SHOW_PROB;
+        // SHOW_PROB = false;
+        // return tmp;
     }
 }
 
