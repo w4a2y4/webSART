@@ -1,187 +1,88 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>My experiment</title>
-    <script src="http://code.jquery.com/jquery-3.2.1.min.js"></script>
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="jspsych-6.0.5/jspsych.js"></script>
-    <script src="jspsych-6.0.5/plugins/jspsych-html-keyboard-response.js"></script>
-    <script src="jspsych-6.0.5/plugins/jspsych-html-button-response.js"></script>
-    <script src="jspsych-6.0.5/plugins/jspsych-image-keyboard-response.js"></script>
-    <script src="jspsych-6.0.5/plugins/jspsych-image-button-response.js"></script>
-    <script src="jspsych-6.0.5/plugins/jspsych-survey-text.js"></script>
-    <script src="jspsych-6.0.5/plugins/jspsych-survey-likert.js"></script>
-    <script src="jspsych-6.0.5/plugins/jspsych-survey-multi-choice.js"></script>
-    <script src="stimulus.js"></script>
-    <link href="jspsych-6.0.5/css/jspsych.css" rel="stylesheet" type="text/css"></link>
-  </head>
-  <body>
-    <div id="wrapper"></div>
-    <div class="aselect">
-        <label for="audioSource">Audio input source: </label><select id="audioSource"></select>
-    </div>
+    <head>
+        <title>My experiment</title>
 
-    <div class="vselect">
-        <label for="videoSource">Video source: </label><select id="videoSource"></select>
-    </div>
-    <video class="videostream" autoplay></video>
-  </body>
-  <script>
+        <script src="http://code.jquery.com/jquery-3.2.1.min.js"></script>
+        <script src="/socket.io/socket.io.js"></script>
+
+        <script src="jspsych-6.0.5/jspsych.js"></script>
+        <script src="jspsych-6.0.5/plugins/jspsych-html-keyboard-response.js"></script>
+        <script src="jspsych-6.0.5/plugins/jspsych-html-button-response.js"></script>
+        <script src="jspsych-6.0.5/plugins/jspsych-image-keyboard-response.js"></script>
+        <script src="jspsych-6.0.5/plugins/jspsych-image-button-response.js"></script>
+        <script src="jspsych-6.0.5/plugins/jspsych-survey-text.js"></script>
+        <script src="jspsych-6.0.5/plugins/jspsych-survey-likert.js"></script>
+        <script src="jspsych-6.0.5/plugins/jspsych-survey-multi-choice.js"></script>
+
+        <script src="stimulus.js"></script>
+        <link href="jspsych-6.0.5/css/jspsych.css" rel="stylesheet" type="text/css"></link>
+
+    </head>
+    <body>
+    </body>
+    <script>
 
     const BLOCK_NUM = 1;
     const TRIAL_NUM = 10;
+    // const BLOCK_NUM = 30;
+    // const TRIAL_NUM = 20;
     const TARGET_PROPORTION = 0.1;
     const TARGET_NUM = TRIAL_NUM * TARGET_PROPORTION;
     const NONTARG_NUM = TRIAL_NUM - TARGET_NUM;
 
-    var SUBJECT = -1;
+    var subject = window.prompt("請輸入受試者編號：");
+    var timestamp = new Date().Format("yyyyMMdd-hhmm");
 
-    /* Socket */
-
-    var socket = io.connect();
-
-    /* Vid */
-    const videoElement = document.querySelector('video');
-    const audioSelect = document.querySelector('select#audioSource');
-    const videoSelect = document.querySelector('select#videoSource');
-    var recorder;
-    var allChunks = [];
-
-    audioSelect.onchange = getStream;
-    videoSelect.onchange = getStream;
-
-    function gotDevices(deviceInfos) {
-      for (let i = 0; i !== deviceInfos.length; ++i) {
-        const deviceInfo = deviceInfos[i];
-        const option = document.createElement('option');
-        option.value = deviceInfo.deviceId;
-        if (deviceInfo.kind === 'audioinput') {
-          option.text = deviceInfo.label ||
-            'microphone ' + (audioSelect.length + 1);
-          audioSelect.appendChild(option);
-        } else if (deviceInfo.kind === 'videoinput') {
-          option.text = deviceInfo.label || 'camera ' +
-            (videoSelect.length + 1);
-          videoSelect.appendChild(option);
-        } else {
-          console.log('Found another kind of device: ', deviceInfo);
-        }
-      }
-    }
-
-    function getStream() {
-      if (window.stream) {
-        window.stream.getTracks().forEach(function(track) {
-          track.stop();
-        });
-      }
-
-      const constraints = {
-        audio: {
-          deviceId: {exact: audioSelect.value}
-        },
-        video: {
-          deviceId: {exact: videoSelect.value}
-        }
-      };
-
-      navigator.mediaDevices.getUserMedia(constraints).
-        then(gotStream).catch(handleError);
-    }
-
-    function gotStream(stream) {
-      // window.stream = stream; // make stream available to console
-      // videoElement.srcObject = stream;
-      recorder = new MediaRecorder(stream, {mimeType: 'video/webm;codecs=h264'});
-      recorder.ondataavailable = pushblob;
-      recorder.onstop = stoprecord;
-      recorder.start();
-      socket.emit('start_recording');
-    }
-
-    function handleError(error) {
-      console.error('Error: ', error);
-    }
-
-    function pushblob(e) {
-        allChunks.push(e.data);
-        console.log("!!!!");
-    }
-
-    function stoprecord() {
-        var fullBlob = new Blob(allChunks, {type: 'video/mp4'});
-        window.fb = fullBlob;
-        window.dl = download;
-        console.log(allChunks);
-        console.log(fullBlob);
-        download(fullBlob, 'media.mp4');
-        socket.emit('vid', fullBlob);
-        // sendrecord();
-    }
-
-    function sendrecord() {
-        socket.emit('send_start');
-        for (i = 0; i < allChunks.length; i++) {
-            socket.emit('chunk', i, allChunks[i]);
-        }
-        socket.emit('send_end');
-    }
-
-    function download(content, fileName, contentType) {
-        var a = document.createElement("a");
-        var file = new Blob([content], {type: contentType});
-        a.href = URL.createObjectURL(file);
-        a.download = fileName;
-        a.click();
-    }
-
-    function sleep(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
-    }
+    console.log(subject)
+    console.log(timestamp)
 
     /******************************* prepare timelime ******************************/
 
+    // intro
     var timeline = [];
-    timeline.push(subj_num);
     timeline.push(get_intro_index(0));
     timeline.push(get_intro_index(1));
     timeline.push(get_intro_index(2));
     timeline.push(get_intro_index(3));
-    timeline.push(pre_sleep);
-    timeline.push(get_intro('start'));
 
+    // practice session
+    timeline.push(get_intro_index(4));
+    timeline.push(generate_test_procedure(1, 9));
+    timeline.push(probe_node);
+    timeline.push(get_intro('start'));
+    timeline.push(pre_sleep);
+
+    // main session
     for (var i = 0; i < BLOCK_NUM; i++) {
-        timeline.push(get_intro('ready'));
+        if (i == 0 || i == (BLOCK_NUM/2))
+            timeline.push(get_intro('ready'));
         timeline.push(generate_test_procedure(TARGET_NUM, NONTARG_NUM));
+        timeline.push(probe_node);
     }
 
     timeline.push(post_sleep);
     timeline.push(get_intro('end'));
 
-    navigator.mediaDevices
-        .enumerateDevices()
-        .then(gotDevices)
-        .then(getStream)
-        .catch(handleError);
-    videoElement.style.display = 'none';
-    document.querySelector('.aselect').style.display = 'none';
-    document.querySelector('.vselect').style.display = 'none';
-
-
     /****************************** start the experiment ******************************/
     jsPsych.init({
         timeline: timeline,
-        display_element: 'wrapper',
         on_finish: function() {
-            recorder.stop();
-            jsPsych.data.displayData();
+
             var dt = jsPsych.data.get();
             var res_data = dt.filter({test_part: 'test'})
                 .ignore(['internal_node_id', 'trial_index', 'trial_type', 'stimulus', 'test_part', 'correct_response'])
                 .csv();
-            var prob_data = dt.filter({test_part: 'prob'}).ignore(['internal_node_id', 'key_press', 'trial_index', 'trial_type', 'test_part'])
+            var prob_data = dt.filter({test_part: 'prob'})
+                .ignore(['internal_node_id', 'key_press', 'trial_index', 'trial_type', 'test_part'])
                 .csv();
-            download(res_data + prob_data, "test.csv");
+
+            download(res_data, subject + '-' + timestamp + "-res.csv");
+            download(prob_data, subject + '-' + timestamp + "-probe.csv");
+
+            console.log(prob_data);
+            console.log(res_data);
+
         }
     });
 
